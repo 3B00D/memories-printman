@@ -1,0 +1,11 @@
+{
+  "lambda": {
+    "role": "memories-printman-executor",
+    "name": "memories-printman",
+    "region": "us-east-1"
+  },
+  "api": {
+    "id": "ewsbzruz30",
+    "module": "bot"
+  }
+}

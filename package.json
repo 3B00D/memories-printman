@@ -1,0 +1,28 @@
+{
+  "name": "memories-printman",
+  "version": "1.0.0",
+  "description": "Chatbot for printing memories photos into pdf.",
+  "main": "index.js",
+  "scripts": {
+    "create": "claudia create --region us-east-1 --api-module bot",
+    "deploy": "claudia update"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/3B00D/memories-printman.git"
+  },
+  "author": "YaaCode",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/3B00D/memories-printman/issues"
+  },
+  "homepage": "https://github.com/3B00D/memories-printman#readme",
+  "dependencies": {
+    "claudia-bot-builder": "^1.4.4",
+    "request": "^2.74.0",
+    "speakeasy-nlp": "^0.2.2"
+  },
+  "devDependencies": {
+    "aws-sdk": "^2.6.3"
+  }
+}
