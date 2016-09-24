@@ -1,0 +1,13 @@
+{
+  "name": "image-uploader",
+  "version": "1.0.0",
+  "description": "Upload images to s3 and notify the user when done.",
+  "main": "index.js",
+  "scripts": {},
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "aws-sdk": "^2.6.4",
+    "request": "^2.75.0"
+  }
+}

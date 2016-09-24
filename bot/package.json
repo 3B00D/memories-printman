@@ -21,6 +21,7 @@
     "async": "^2.0.1",
     "aws-sdk": "^2.6.3",
     "claudia-bot-builder": "^1.4.4",
-    "natural": "^0.4.0"
+    "natural": "^0.4.0",
+    "request": "^2.75.0"
   }
 }
