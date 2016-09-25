@@ -67,7 +67,7 @@ module.exports = {
         });
         
     }
-    function readRow(id,callback){
+    function updateRow(data,callback){
         //console.log("connecting to Dynamo");
         var params = {
             TableName: TABLENAME,

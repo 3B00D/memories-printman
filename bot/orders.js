@@ -23,11 +23,9 @@ module.exports = {
                 "address": "#",
                 "phoneNumber": "#",
                 "theme": "#",
-                "themetype": "#",
-                "paperType": "#",
+                "themeType": "#",
                 "completed": 0,
                 "attributes": attributes,
-                "postcode": "#"
             }
         };
 
@@ -62,8 +60,8 @@ module.exports = {
         });
         
     },
-    UpdateOrder :function (data,callback){
-        updateRow(data, function(err,data) {
+    UpdateOrder :function (orderId,data,callback){
+        updateRow(orderId,data, function(err,data) {
             callback(err,data);
         });
     },
@@ -107,24 +105,25 @@ module.exports = {
         });
         
     }
-    function readRow(id,callback){
+    
+    function updateRow(orderId,data,callback){
         //console.log("connecting to Dynamo");
         var params = {
-            TableName: TABLENAME,
-            Key:{
-                 "Id": id
-            }
+        TableName: TABLENAME,
+        Key: {
+                "Id":orderId
+        },
+            UpdateExpression: "SET firstName = :firstName",
+            ExpressionAttributeValues: {
+                ":firstName": data.firstName,
+            },
+            ReturnValues: "ALL_NEW"
         };
-        
-        dynamoClient.get(params, function(err, data) {
-            if (err) {
-                console.error("Unable to read item");
-                callback(err, data);
-            } else {
-                callback(err, data);
-            }
+
+        dynamoClient.update(params, function(err, data) {
+            callback(err, data);
         });
-        
+
     }
     function readSecandory(Id,indexName,column,callback){
         console.log("connecting to Dynamo");
