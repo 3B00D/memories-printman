@@ -43,6 +43,7 @@ function handleImages(event,callback)
 
 function decideOrderResponse ( order , message , callback ) 
 {
+	console.log('should respond to user ',order,message , callback);
 	callback(null,"Respones : "+message);
 }
 
@@ -52,8 +53,9 @@ function handleOrderMessage( event , callback , manuallyRespond)
 	var respondUrl = event.originalRequest.response_url;
 	var sender = event.sender;
 	// completed : 0 -> not completed , 1 -> completed , 2 -> in progress
-	orders.getSenderOrder(sender,function (err, data)
+	orders.CheckClientOrders(sender,function (err, data)
 		{
+			console.log('check client orders ',err,data);
 			if(err)
 			{
 				callback('An error occured while trying to get your order.\n'+err);
@@ -74,6 +76,7 @@ function handleOrderMessage( event , callback , manuallyRespond)
 				{
 					orders.createOrder(sender,function (err, data)
 						{
+							console.log('create ordedr', err , data);
 							if(err)
 							{
 								callback('An error occured while creating your order.\n'+err);
@@ -111,7 +114,7 @@ function handleOrderMessage( event , callback , manuallyRespond)
 				// check order required info.
 			}
 		});
-	tokenizer = new natural.TreebankWordTokenizer();
+	/*tokenizer = new natural.TreebankWordTokenizer();
 	var tokens = tokenizer.tokenize(message);
 	if(manuallyRespond)
 	{
@@ -122,7 +125,7 @@ function handleOrderMessage( event , callback , manuallyRespond)
 	else
 	{
 		callback(JSON.stringify(tokens));
-	}
+	}*/
 }
 /*
 var res = getURIFromString("bro , print those please http://vignette2.wikia.nocookie.net/naruto/images/1/14/Orochimaru_Infobox.png/revision/latest?cb=20150925223113 http://virtuoso.openlinksw.com/dataspace/doc/dav/wiki/Main/VirtLinkedDataDeployment/conductor_url_rewrite_ui_1.png , https://i.ytimg.com/vi/sXEDfpDcb68/maxresdefault.jpg");
