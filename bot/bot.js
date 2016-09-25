@@ -39,7 +39,7 @@ function handleMessage(event,callback)
 	}
 	else
 	{
-		return analyzeText(message);
+		callback();
 	}
 	
 	
