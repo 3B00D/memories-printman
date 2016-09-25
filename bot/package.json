@@ -23,6 +23,7 @@
     "claudia-bot-builder": "^1.4.4",
     "natural": "^0.4.0",
     "request": "^2.75.0",
+	"nlp_compromise": "^6.5.0",
     "shortid": "^2.2.6"
   }
 }
