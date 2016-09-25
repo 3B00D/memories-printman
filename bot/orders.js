@@ -11,7 +11,7 @@ TABLENAME = "Orders";
 
 module.exports = {
 
-    createOrder :function (userId,callback){
+    createOrder :function (userId,attributes,callback){
         id=shortid.generate()+"";
         //console.log(id);
         var data1={"TableName": TABLENAME,
@@ -26,6 +26,7 @@ module.exports = {
                 "themetype": "#",
                 "paperType": "#",
                 "completed": 0,
+                "attributes": attributes,
                 "postcode": "#"
             }
         };
@@ -37,8 +38,8 @@ module.exports = {
             }
         );
     },
-    getItem :function (id,callback){            
-            readRow(id, function(err,data) {
+    getItem :function (id,callback){
+        readRow(id, function(err,data) {
                  callback(err,data);
         });
     },
@@ -61,39 +62,21 @@ module.exports = {
         });
         
     },
-    getOrderStatus :function (id,callback){
-        readRow(id, function(err,data) {
-            emptyAttr=[];
-            for (var key in data) {
-              if (data.hasOwnProperty(key)) {
-                for (var key2 in data[key]) {
-                    //console.log(key2 + " -> " + data[key][key2]);
-                    if(data[key][key2]=="#")
-                    {
-                        emptyAttr.push(key2);
-                    }
-                }
-                
-              }
-            }
-            callback(err,emptyAttr);
-        });
-        
-    },
-
-    CheckClientOrders :function (clientId,callback){
-        readSecandory(clientId,"userId-index-2","userId",function(err,data) {           
+    UpdateOrder :function (data,callback){
+        updateRow(data, function(err,data) {
             callback(err,data);
-        });    
+        });
     },
-
+    CheckClientOrders :function (clientId,callback){
+        readSecandory(clientId,"userId-index-2","userId",function(err,data) {
+            callback(err,data);
+        });
+    },
 };
-    
+
     function createRow(data1,callback){
-       
         //console.log("connecting to Dynamo");
         var r;
-        
         dynamoClient.put( data1,
             function(err,result) {
                 if (err) {
@@ -106,7 +89,26 @@ module.exports = {
     }
 
     function readRow(id,callback){
-        console.log("connecting to Dynamo");
+        //console.log("connecting to Dynamo");
+        var params = {
+            TableName: TABLENAME,
+            Key:{
+                 "Id": id
+            }
+        };
+        
+        dynamoClient.get(params, function(err, data) {
+            if (err) {
+                console.error("Unable to read item");
+                callback(err, data);
+            } else {
+                callback(err, data);
+            }
+        });
+        
+    }
+    function readRow(id,callback){
+        //console.log("connecting to Dynamo");
         var params = {
             TableName: TABLENAME,
             Key:{
@@ -135,7 +137,7 @@ module.exports = {
             ExpressionAttributeValues: {
                 ":x": Id
             },
-            ProjectionExpression: "Id, firstname"
+            ProjectionExpression: "Id,userId,firstName,lastName,address,phoneNumber,theme,themetype,paperType,completed,attributes,postcode"
         };
         console.error("Params:", JSON.stringify(params, null, 3));
         dynamoClient.query(params, function(err, data) {
