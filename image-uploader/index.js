@@ -8,6 +8,7 @@ exports.handler = (event, context, callback) => {
 	var ev = JSON.parse(event.Records[0].Sns.Message);
     var uri = ev.image;
     var respondUrl = ev.respondUrl;
+    var sender = ev.sender;
 	var options = {
 	        uri: uri,
 	        encoding: null
@@ -23,7 +24,7 @@ exports.handler = (event, context, callback) => {
         } else {
             s3.putObject({
                 Body: body,
-                Key: Math.random().toString(36)+".png",
+                Key: sender + "/" + Math.random().toString(36)+".png",
                 Bucket: bucket_name
             }, function(error, data) {
                 if (error) {
