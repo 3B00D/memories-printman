@@ -113,9 +113,17 @@ module.exports = {
         Key: {
                 "Id":orderId
         },
-            UpdateExpression: "SET firstName = :firstName",
+            UpdateExpression: "SET firstName = :firstName , lastName = :lastName , address = :address , userId = :userId , theme = :theme , themeType = :themeType , phoneNumber = :phoneNumber , completed = :completed , attributes =:attributes",
             ExpressionAttributeValues: {
                 ":firstName": data.firstName,
+                ":lastName": data.lastName,
+                ":address": data.address,
+                ":userId": data.userId,
+                ":theme": data.theme,
+                ":themeType": data.themeType,
+                ":phoneNumber": data.phoneNumber,
+                ":completed": data.completed,
+                ":attributes": data.attributes,
             },
             ReturnValues: "ALL_NEW"
         };
@@ -126,7 +134,7 @@ module.exports = {
 
     }
     function readSecandory(Id,indexName,column,callback){
-        console.log("connecting to Dynamo");
+        //console.log("connecting to Dynamo");
                 
         var params = {
             TableName: TABLENAME,
