@@ -29,7 +29,7 @@ module.exports = {
     }
 
     function getConfig(config,callback){
-        console.log("Querying the config :"+config);
+        // console.log("Querying the config :"+config);
     var params = {
         TableName : TABLENAME,
         KeyConditionExpression: "#conf = :x",
@@ -48,8 +48,13 @@ module.exports = {
         } else {
             //console.log("Query succeeded.");
         }
-        // Only themes there for now 
-        callback(err,data.Items[0].Value);
+        result = {};
+        for (var key in data.Items) {
+            if (data.Items[key].Name=config) {
+                result = data.Items[key].Value;
+            }
+        }          
+        callback(err,result);
     });
 }
 
