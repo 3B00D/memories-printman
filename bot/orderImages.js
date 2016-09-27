@@ -7,25 +7,16 @@ AWS.config.update({
 
 var dynamoClient = new AWS.DynamoDB.DocumentClient();
 
-TABLENAME = "Orders";
+TABLENAME = "OrderImages";
 
 module.exports = {
 
-    createOrder :function (userId,attributes,callback){
-        id=shortid.generate()+"";
-        //console.log(id);
+    addOrderImage :function (orderId,userId,imageUrl,callback){
         var data1={"TableName": TABLENAME,
             Item: {
-                "Id": id,
-                "userId": userId,
-                "firstName": "#",
-                "lastName":"#",
-                "address": "#",
-                "phoneNumber": "#",
-                "theme": "#",
-                "themeType": "#",
-                "completed": 0,
-                "attributes": attributes,
+                "OrderId": orderId,
+                "imageUrl": imageUrl,
+                "userId": userId
             }
         };
 
@@ -36,38 +27,9 @@ module.exports = {
             }
         );
     },
-    getItem :function (id,callback){
-        readRow(id, function(err,data) {
+    getOrderImages :function (orderId,callback){
+        readRows(orderId, function(err,data) {
                  callback(err,data);
-        });
-    },
-    getOrderStatus :function (id,callback){
-        readRow(id, function(err,data) {
-            emptyAttr=[];
-            for (var key in data) {
-              if (data.hasOwnProperty(key)) {
-                for (var key2 in data[key]) {
-                    //console.log(key2 + " -> " + data[key][key2]);
-                    if(data[key][key2]=="#")
-                    {
-                        emptyAttr.push(key2);
-                    }
-                }
-                
-              }
-            }
-            callback(err,emptyAttr);
-        });
-        
-    },
-    UpdateOrder :function (orderId,data,callback){
-        updateRow(orderId,data, function(err,data) {
-            callback(err,data);
-        });
-    },
-    CheckClientOrders :function (clientId,callback){
-        readSecandory(clientId,"userId-index-2","userId",function(err,data) {
-            callback(err,data);
         });
     },
 };
@@ -86,7 +48,26 @@ module.exports = {
         
     }
 
-    function readRow(id,callback){
+    function readRows(id,callback){
+        //console.log("connecting to Dynamo");
+        var params = {
+            TableName: TABLENAME,
+            Key:{
+                 "OrderId": id
+            }
+        };
+        
+        dynamoClient.scan(params, function(err, data) {
+            if (err) {
+                console.error("Unable to read item");
+                callback(err, data);
+            } else {
+                callback(err, data);
+            }
+        });
+        
+    }
+    function updateRow(data,callback){
         //console.log("connecting to Dynamo");
         var params = {
             TableName: TABLENAME,
@@ -104,26 +85,6 @@ module.exports = {
             }
         });
         
-    }
-    
-    function updateRow(orderId,data,callback){
-        //console.log("connecting to Dynamo");
-        var params = {
-        TableName: TABLENAME,
-        Key: {
-                "Id":orderId
-        },
-            UpdateExpression: "SET firstName = :firstName",
-            ExpressionAttributeValues: {
-                ":firstName": data.firstName,
-            },
-            ReturnValues: "ALL_NEW"
-        };
-
-        dynamoClient.update(params, function(err, data) {
-            callback(err, data);
-        });
-
     }
     function readSecandory(Id,indexName,column,callback){
         console.log("connecting to Dynamo");
