@@ -12,7 +12,8 @@ var uploadOrderTopic = "arn:aws:sns:us-east-1:957854044465:image-upload-topic";
 var slackDelayedReply = botBuilder.slackDelayedReply
 
 var themes = ['kids','adults'];
-var themeTypes = {'kids':['1','2','3'] , 'adults' : ['1',3]};
+var themeTypes = {'kids':[{name:'1',image :''},{name:'1',image :''}] , 'adults' : ['1',3]};
+var commands = [{ 'command':'start' , 'keywords':['start','run','go','execute','initialize']}];
 function getURIFromString(str)
 {
 	var uri_pattern = /\b((?:[a-z][\w-]+:(?:\/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}\/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’]))/ig;
@@ -91,15 +92,16 @@ function decideOrderResponse ( order , message , callback )
 	var phone = null;
 	var theme = null;
 	var themeType = null;
-	if( ( order.firstName == '#' || order.lastName == '#' ) && people.length > 0 )
+	if(people.length > 0 )
 	{
 		for(var i = 0 ; i< people.length ; i++)
 		{
-			if(people[i].firstName)
+			console.log(people[i]);
+			if( people[i].firstName && order.firstName == '#' )
 			{
 				firstname = people[i].firstName;
 			}
-			if(people[i].lastName)
+			if( people[i].lastName && order.lastName == '#' )
 			{
 				lastname = people[i].lastName;
 			}
@@ -117,7 +119,6 @@ function decideOrderResponse ( order , message , callback )
 	else if(order.phoneNumber == '#')
 	{
 		phoneParser.parse(message);
-		console.log(phoneParser);
 		if(phoneParser.items.length>0)
 		{
 			phone = phoneParser.items.join(',');
@@ -147,32 +148,39 @@ function decideOrderResponse ( order , message , callback )
 	if(firstname)
 	{
 		order.firstName =  firstname;
+		order.requireUpdate = true;
 	}
 	if(lastname)
 	{
 		order.lastName =  lastname;
+		order.requireUpdate = true;
 	}
 	if(address)
 	{
 		order.address =  address;
+		order.requireUpdate = true;
 	}
 	if(phone)
 	{
 		order.phoneNumber =  phone;
+		order.requireUpdate = true;
 	}
 	if(theme)
 	{
 		order.theme=theme;
+		order.requireUpdate = true;
 	}
 
 	if(themeType)
 	{
 		order.themeType=themeType;
+		order.requireUpdate = true;
 	}
 
 	var terms = nlp.sentence(message).terms;
 	for(var i = 0; i<terms.length;i++)
 	{
+		console.log(terms[i]);
 		if(terms[i].pos.Verb == true)
 		{
 			// console.log(terms[i].Verb);
@@ -187,10 +195,18 @@ function decideOrderResponse ( order , message , callback )
 
 	var nextQuestion = getNextQuestion(order);
 	
-	console.log(nextQuestion,order);
-
-	// console.log('should respond to user : ',nextQuestion,order,message , callback);
-	callback(null,"Respones : "+message);
+	console.log(order.requireUpdate);
+	if(order.requireUpdate)
+	{
+		orders.UpdateOrder(order.Id,order,function (err,data)
+		{
+			callback(err,nextQuestion);
+		});
+	}
+	else
+	{
+		callback(null,nextQuestion);
+	}
 }
 
 function handleOrderMessage( event , callback , manuallyRespond)
@@ -249,6 +265,11 @@ function handleOrderMessage( event , callback , manuallyRespond)
 				}
 				else
 				{
+					if(old.attributes.response_url!=response_url)
+					{
+						old.requireUpdate = true;
+						old.attributes.response_url = response_url;
+					}
 					decideOrderResponse( old , message , function (err,response)
 						{
 							if(err)
@@ -304,6 +325,7 @@ var api = botBuilder(function (message,apiRequest)
       		});
       	}).then((response)=>
       	{
+      		var result = {};
       		if(typeof(response) == 'object')
       		{
       			result = response;
@@ -334,3 +356,5 @@ module.exports = api;
 	{
 		console.log(err,body);
 	});*/
+
+//console.log(handleOrderMessage({ sender : 'U2C4HC9DM', originalRequest:{ response_url : "https://hooks.slack.com/commands/T2C4H2X3K/84593953089/hXTgd5vmcqLEIIJdap4XtUeR" }, text : "My name is John Mog"},function (res){console.log(res);}));
