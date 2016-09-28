@@ -40,7 +40,7 @@ function getURIFromString(str)
 	return str.match(uri_pattern);
 }
 
-function handleImages(event,callback)
+function handleImages(event,order,callback)
 {
 	var message = event.text;
 	var respondUrl = event.originalRequest.response_url;
@@ -51,7 +51,7 @@ function handleImages(event,callback)
 	{
 		async.forEachOf(images, function (value, key, acallback) {
 		  var params = {
-		        Message: JSON.stringify({ image : value , respondUrl : respondUrl , sender : sender  }, null, 2), 
+		        Message: JSON.stringify({ image : value , respondUrl : respondUrl , sender : sender , order : order }, null, 2), 
 		        Subject: "upload order",
 		        TopicArn: uploadOrderTopic
 		    };
@@ -65,7 +65,7 @@ function handleImages(event,callback)
 	}
 	else
 	{
-		callback();
+		callback(null);
 	}
 }
 
@@ -311,7 +311,7 @@ function handleOrderMessage( event , callback , manuallyRespond)
 									}
 									else
 									{
-										callback(response);
+										callback(response,data);
 									}
 								});
 							}
@@ -332,7 +332,7 @@ function handleOrderMessage( event , callback , manuallyRespond)
 							}
 							else
 							{
-								callback(response);
+								callback(response,old);
 							}
 						});
 				}
@@ -364,19 +364,31 @@ var api = botBuilder(function (message,apiRequest)
 {
 
 	return new Promise((resolve, reject) => {
-      handleImages(message,function (err)
-      	{
-      		if (err) return reject(err);
-
-	        resolve();
-      	});
-    })
-      .then(() => {
-      	return new Promise((resolve, reject) => {
-      		handleOrderMessage(message,function (response)
+		handleOrderMessage(message,function (response,order)
       		{
-      			resolve(response);
+      			console.log('promise handleOrderMessage response',response,order);
+      			resolve({response : response,order:order});
       		});
+    })
+      .then((response) => {
+      	var order = response.order;
+      	var response = response.response;
+      	return new Promise((resolve, reject) => {
+      		console.log('trying to handle the order images.',order);
+      		if(order)
+      		{
+      			handleImages(message,order,function (err)
+		      	{
+		      		console.log('handle images response',err);
+		      		if (err) return reject(err);
+
+			        resolve(response);
+		      	});
+      		}
+      		else
+      		{
+      			reject(response);
+      		}
       	}).then((response)=>
       	{
       		var result = {};
@@ -391,7 +403,8 @@ var api = botBuilder(function (message,apiRequest)
       		result.response_type = 'in_channel';
       		return result;
       	})
-      	.catch(() => {
+      	.catch((err) => {
+      		console.log(err);
 	        return `Could not process your order`
 	      });
       })
@@ -411,4 +424,4 @@ module.exports = api;
 		console.log(err,body);
 	});*/
 
-console.log(handleOrderMessage({ sender : 'U2C4HC9DM', originalRequest:{ response_url : "https://hooks.slack.com/commands/T2C4H2X3K/84593953089/hXTgd5vmcqLEIIJdap4XtUeR" }, text : "print"},function (res){console.log(res);}));
+//console.log(handleOrderMessage({ sender : 'U2C4HC9DM', originalRequest:{ response_url : "https://hooks.slack.com/commands/T2C4H2X3K/84593953089/hXTgd5vmcqLEIIJdap4XtUeR" }, text : "print"},function (res){console.log(res);}));
