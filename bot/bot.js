@@ -10,7 +10,7 @@ var nlp = require('nlp_compromise');
 var phoneNumberParser = require('./phone-number-parser');
 var phoneParser = new phoneNumberParser();
 var uploadOrderTopic = "arn:aws:sns:us-east-1:957854044465:image-upload-topic";
-var printOrderTopic = "arn:aws:sns:us-east-1:957854044465:image-upload-topic";
+var printOrderTopic = "arn:aws:sns:us-east-1:957854044465:printman-process-order";
 var slackDelayedReply = botBuilder.slackDelayedReply
 
 var themes = [];
@@ -384,7 +384,6 @@ uploadFromURI(res[i],new Date().getTime()+".png","printman-images",function (){}
 //console.log(handleImages({ originalRequest:{ response_url : "https://hooks.slack.com/commands/T2C4H2X3K/83601128182/D1ApAztUPfJvHUcpml2ZC93A" }, text : "please print this for me https://i.ytimg.com/vi/sXEDfpDcb68/maxresdefault.jpg"},function (){}));
 var api = botBuilder(function (message,apiRequest)
 {
-
 	return new Promise((resolve, reject) => {
 		handleOrderMessage(message,function (response,order)
       		{

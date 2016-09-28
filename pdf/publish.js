@@ -7,7 +7,7 @@ fs.readFile('1.html', 'utf8', function (err,data) {
     return console.log(err);
   }
   
-  var imagepath = "https://d1to9yjin79kmw.cloudfront.net/themes/kids/kids1/2.jpg";
+  var imagepath = "https://s3.amazonaws.com/printman-assets/themes/kids/kids1/2.jpg";
   var data = data.replace("##img1##", imagepath);
   html=data;
   
