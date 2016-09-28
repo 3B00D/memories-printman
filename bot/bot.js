@@ -9,11 +9,31 @@ var nlp = require('nlp_compromise');
 var phoneNumberParser = require('./phone-number-parser');
 var phoneParser = new phoneNumberParser();
 var uploadOrderTopic = "arn:aws:sns:us-east-1:957854044465:image-upload-topic";
+var printOrderTopic = "arn:aws:sns:us-east-1:957854044465:image-upload-topic";
 var slackDelayedReply = botBuilder.slackDelayedReply
 
 var themes = ['kids','adults'];
-var themeTypes = {'kids':[{name:'1',image :''},{name:'1',image :''}] , 'adults' : ['1',3]};
-var commands = [{ 'command':'start' , 'keywords':['start','run','go','execute','initialize']}];
+var themeTypes = {'kids':[{name:'1',image :'https://i.ytimg.com/vi/sXEDfpDcb68/maxresdefault.jpg'},{name:'1',image :'https://i.ytimg.com/vi/sXEDfpDcb68/maxresdefault.jpg'}] };
+var commands = [
+		{ 
+			'command':'start' , 
+			'keywords':['start','print','apply','run','go','execute','initialize','render'] , 
+			'message' : 'Printing your image.' ,
+			'run' : function(order , callback)
+			{
+				// trigger sns to start producing the pdf (you can also return back an error message using the slack command).
+				var params = {
+			        Message: JSON.stringify({ order : order }, null, 2), 
+			        Subject: "printing order",
+			        TopicArn: printOrderTopic
+			    };
+			    sns.publish(params,function (err,d)
+		    	{
+		    		callback(err,d);
+		    	});
+			}
+		}
+	];
 function getURIFromString(str)
 {
 	var uri_pattern = /\b((?:[a-z][\w-]+:(?:\/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}\/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’]))/ig;
@@ -73,7 +93,15 @@ function getNextQuestion(order)
 	}
 	if(order.themeType == '#')
 	{
-		return "What is the required theme type? options are : "+themeTypes[order.theme].join(' , ');
+		var images = [];
+		for(var i = 0;i<themeTypes[order.theme].length;i++)
+		{
+			images.push({
+	    		"image_url" : themeTypes[order.theme][i].image,
+	    		"fallback" : themeTypes[order.theme][i].name
+	    	});
+		}
+		return {text : "What is the required theme type? options are : " , attachments : images };
 	}
 	if( order.completed == 0 )
 	{
@@ -96,7 +124,7 @@ function decideOrderResponse ( order , message , callback )
 	{
 		for(var i = 0 ; i< people.length ; i++)
 		{
-			console.log(people[i]);
+			// console.log(people[i]);
 			if( people[i].firstName && order.firstName == '#' )
 			{
 				firstname = people[i].firstName;
@@ -111,10 +139,7 @@ function decideOrderResponse ( order , message , callback )
 	var places = analysed.places();
 	if( order.address == '#' && places.length > 0)
 	{
-		address = "";
-		for (var i = 0; i < places.length ; i++ ) {
-			address+= places[i].text + " ";
-		};
+		address = message;
 	}
 	else if(order.phoneNumber == '#')
 	{
@@ -138,9 +163,16 @@ function decideOrderResponse ( order , message , callback )
 	
 	if(order.themeType == '#')
 	{
-		if(order.theme != '#' && themeTypes[order.theme].indexOf(message)>=0)
+		if(order.theme != '#')
 		{
-			themeType = message;
+			for(var i =0 ; i<themeTypes[order.theme].length;i++)
+			{
+				if(themeTypes[order.theme][i].name == message)
+				{
+					themeType = message;
+					break;
+				}
+			}
 		}
 	}
 
@@ -177,35 +209,57 @@ function decideOrderResponse ( order , message , callback )
 		order.requireUpdate = true;
 	}
 
-	var terms = nlp.sentence(message).terms;
-	for(var i = 0; i<terms.length;i++)
+	var responseded = false;
+	if(!order.requireUpdate)
 	{
-		console.log(terms[i]);
-		if(terms[i].pos.Verb == true)
+		var command = null;
+		var terms = nlp.sentence(message).terms;
+		for(var i = 0; i<terms.length;i++)
 		{
-			// console.log(terms[i].Verb);
-			// check to se if it is a command.
+			//console.log(terms[i]);
+			if(terms[i].pos.Verb == true)
+			{
+				// check to se if it is a command.
+				for (var j = 0; j < commands.length ; j++) 
+				{
+					if(commands[j].keywords.indexOf(terms[i].normal) >= 0)
+					{
+						command = commands[j];
+						responseded = true;
+						orders.UpdateOrder(order.Id,order,function (err,data)
+						{
+							if(err)
+							{
+								callback(err);
+							}
+							else
+							{
+								command.run(order,function (err,d)
+								{
+									callback( err,command.message );
+								});
+							}
+						});
+					}
+				}
+			}
 		}
 	}
-	// TODO : check if it is a theme type 
-
-
-	// TODO : set (start,print,go) commands to affect completed variable.
-
-
-	var nextQuestion = getNextQuestion(order);
-	
-	console.log(order.requireUpdate);
-	if(order.requireUpdate)
+	if(!responseded)
 	{
-		orders.UpdateOrder(order.Id,order,function (err,data)
+		var nextResponse = getNextQuestion(order);
+		if(order.requireUpdate)
 		{
-			callback(err,nextQuestion);
-		});
-	}
-	else
-	{
-		callback(null,nextQuestion);
+			orders.UpdateOrder(order.Id,order,function (err,data)
+			{
+				console.log(err);
+				callback(err,nextResponse);
+			});
+		}
+		else
+		{
+			callback(null,nextResponse);
+		}
 	}
 }
 
@@ -217,7 +271,7 @@ function handleOrderMessage( event , callback , manuallyRespond)
 	// completed : 0 -> not completed , 1 -> completed , 2 -> in progress
 	orders.CheckClientOrders(sender,function (err, data)
 		{
-			console.log('check client orders ',err,data);
+			//console.log('check client orders ',err,data);
 			if(err)
 			{
 				callback('An error occured while trying to get your order.\n'+err);
@@ -242,7 +296,7 @@ function handleOrderMessage( event , callback , manuallyRespond)
 				{
 					orders.createOrder(sender,{response_url : response_url},function (err, data)
 						{
-							console.log('create ordedr', err , data);
+							console.log('create order', err , data);
 							if(err)
 							{
 								callback('An error occured while creating your order.\n'+err);
@@ -357,4 +411,4 @@ module.exports = api;
 		console.log(err,body);
 	});*/
 
-//console.log(handleOrderMessage({ sender : 'U2C4HC9DM', originalRequest:{ response_url : "https://hooks.slack.com/commands/T2C4H2X3K/84593953089/hXTgd5vmcqLEIIJdap4XtUeR" }, text : "My name is John Mog"},function (res){console.log(res);}));
+console.log(handleOrderMessage({ sender : 'U2C4HC9DM', originalRequest:{ response_url : "https://hooks.slack.com/commands/T2C4H2X3K/84593953089/hXTgd5vmcqLEIIJdap4XtUeR" }, text : "print"},function (res){console.log(res);}));

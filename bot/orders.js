@@ -113,7 +113,7 @@ module.exports = {
         Key: {
                 "Id":orderId
         },
-            UpdateExpression: "SET firstName = :firstName , lastName = :lastName , address = :address , userId = :userId , theme = :theme , themeType = :themeType , phoneNumber = :phoneNumber , completed = :completed , attributes =:attributes",
+            UpdateExpression: "SET firstName = :firstName , lastName = :lastName , address = :address , userId = :userId , theme = :theme , themeType = :themeType , phoneNumber = :phoneNumber , completed = :completed , attributes = :attributes",
             ExpressionAttributeValues: {
                 ":firstName": data.firstName,
                 ":lastName": data.lastName,
@@ -144,9 +144,9 @@ module.exports = {
             ExpressionAttributeValues: {
                 ":x": Id
             },
-            ProjectionExpression: "Id,userId,firstName,lastName,address,phoneNumber,theme,themetype,paperType,completed,attributes,postcode"
+            ProjectionExpression: "Id,userId,firstName,lastName,address,phoneNumber,theme,themeType,completed,attributes"
         };
-        console.error("Params:", JSON.stringify(params, null, 3));
+        //console.error("Params:", JSON.stringify(params, null, 3));
         dynamoClient.query(params, function(err, data) {
             if (err) {
                 console.error("Unable to read item");
