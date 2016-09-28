@@ -5,6 +5,7 @@ var async = require('async');
 var sns = new AWS.SNS({region:'us-east-1'});
 var slackresponder = require('./slack-responder');
 var orders = require('./orders');
+var configModel = require('./config.js');
 var nlp = require('nlp_compromise');
 var phoneNumberParser = require('./phone-number-parser');
 var phoneParser = new phoneNumberParser();
@@ -12,8 +13,8 @@ var uploadOrderTopic = "arn:aws:sns:us-east-1:957854044465:image-upload-topic";
 var printOrderTopic = "arn:aws:sns:us-east-1:957854044465:image-upload-topic";
 var slackDelayedReply = botBuilder.slackDelayedReply
 
-var themes = ['kids','adults'];
-var themeTypes = {'kids':[{name:'1',image :'https://i.ytimg.com/vi/sXEDfpDcb68/maxresdefault.jpg'},{name:'1',image :'https://i.ytimg.com/vi/sXEDfpDcb68/maxresdefault.jpg'}] };
+var themes = [];
+var themeTypes = {};
 var commands = [
 		{ 
 			'command':'start' , 
@@ -112,155 +113,176 @@ function getNextQuestion(order)
 
 function decideOrderResponse ( order , message , callback ) 
 {
-	var analysed = nlp.text(message);
-	var people = analysed.people();
-	var firstname = null;
-	var lastname = null;
-	var address = null;
-	var phone = null;
-	var theme = null;
-	var themeType = null;
-	if(people.length > 0 )
+	if(order.theme == '#' || order.themeType == '#')
 	{
-		for(var i = 0 ; i< people.length ; i++)
-		{
-			// console.log(people[i]);
-			if( people[i].firstName && order.firstName == '#' )
-			{
-				firstname = people[i].firstName;
-			}
-			if( people[i].lastName && order.lastName == '#' )
-			{
-				lastname = people[i].lastName;
-			}
-		}
+		var result = configModel.getThemes(function(err,data){
+            if (err) {
+                console.error("Unable to read config.",err);
+            } else {
+            	themes = Object.keys(data);
+            	themeTypes = data;
+                processAndReply();
+            }
+        });
+	}
+	else
+	{
+		processAndReply();
 	}
 
-	var places = analysed.places();
-	if( order.address == '#' && places.length > 0)
+	function processAndReply()
 	{
-		address = message;
-	}
-	else if(order.phoneNumber == '#')
-	{
-		phoneParser.parse(message);
-		if(phoneParser.items.length>0)
+		var analysed = nlp.text(message);
+		var people = analysed.people();
+		var firstname = null;
+		var lastname = null;
+		var address = null;
+		var phone = null;
+		var theme = null;
+		var themeType = null;
+		if(people.length > 0 )
 		{
-			phone = phoneParser.items.join(',');
-		}
-	}
-
-	if(order.theme == '#')
-	{
-		for(var i = 0; i<themes.length;i++)
-		{
-			if(message.indexOf(themes[i])>= 0 )
+			for(var i = 0 ; i< people.length ; i++)
 			{
-				theme = themes[i];
-			}
-		}
-	}
-	
-	if(order.themeType == '#')
-	{
-		if(order.theme != '#')
-		{
-			for(var i =0 ; i<themeTypes[order.theme].length;i++)
-			{
-				if(themeTypes[order.theme][i].name == message)
+				// console.log(people[i]);
+				if( people[i].firstName && order.firstName == '#' )
 				{
-					themeType = message;
-					break;
+					firstname = people[i].firstName;
+				}
+				if( people[i].lastName && order.lastName == '#' )
+				{
+					lastname = people[i].lastName;
 				}
 			}
 		}
-	}
 
-	// fill whatever i find
-	if(firstname)
-	{
-		order.firstName =  firstname;
-		order.requireUpdate = true;
-	}
-	if(lastname)
-	{
-		order.lastName =  lastname;
-		order.requireUpdate = true;
-	}
-	if(address)
-	{
-		order.address =  address;
-		order.requireUpdate = true;
-	}
-	if(phone)
-	{
-		order.phoneNumber =  phone;
-		order.requireUpdate = true;
-	}
-	if(theme)
-	{
-		order.theme=theme;
-		order.requireUpdate = true;
-	}
-
-	if(themeType)
-	{
-		order.themeType=themeType;
-		order.requireUpdate = true;
-	}
-
-	var responseded = false;
-	if(!order.requireUpdate)
-	{
-		var command = null;
-		var terms = nlp.sentence(message).terms;
-		for(var i = 0; i<terms.length;i++)
+		var places = analysed.places();
+		if( order.address == '#' && places.length > 0)
 		{
-			//console.log(terms[i]);
-			if(terms[i].pos.Verb == true)
+			address = message;
+		}
+		else if(order.phoneNumber == '#')
+		{
+			phoneParser.parse(message);
+			if(phoneParser.items.length>0)
 			{
-				// check to se if it is a command.
-				for (var j = 0; j < commands.length ; j++) 
+				phone = phoneParser.items.join(',');
+			}
+		}
+
+		if(order.theme == '#')
+		{
+			for(var i = 0; i<themes.length;i++)
+			{
+				if(message.toLowerCase().indexOf(themes[i].toLowerCase())>= 0 )
 				{
-					if(commands[j].keywords.indexOf(terms[i].normal) >= 0)
+					theme = themes[i];
+				}
+			}
+		}
+		
+		if(order.themeType == '#')
+		{
+			if(order.theme != '#')
+			{
+				for(var i =0 ; i<themeTypes[order.theme].length;i++)
+				{
+					if(themeTypes[order.theme][i].name.toLowerCase() == message.toLowerCase())
 					{
-						command = commands[j];
-						responseded = true;
-						orders.UpdateOrder(order.Id,order,function (err,data)
-						{
-							if(err)
-							{
-								callback(err);
-							}
-							else
-							{
-								command.run(order,function (err,d)
-								{
-									callback( err,command.message );
-								});
-							}
-						});
+						themeType = themeTypes[order.theme][i].name;
+						break;
 					}
 				}
 			}
 		}
-	}
-	if(!responseded)
-	{
-		var nextResponse = getNextQuestion(order);
-		if(order.requireUpdate)
+
+		// fill whatever i find
+		if(firstname)
 		{
-			orders.UpdateOrder(order.Id,order,function (err,data)
+			order.firstName =  firstname;
+			order.requireUpdate = true;
+		}
+		if(lastname)
+		{
+			order.lastName =  lastname;
+			order.requireUpdate = true;
+		}
+		if(address)
+		{
+			order.address =  address;
+			order.requireUpdate = true;
+		}
+		if(phone)
+		{
+			order.phoneNumber =  phone;
+			order.requireUpdate = true;
+		}
+		if(theme)
+		{
+			order.theme=theme;
+			order.requireUpdate = true;
+		}
+
+		if(themeType)
+		{
+			order.themeType=themeType;
+			order.requireUpdate = true;
+		}
+
+		var responseded = false;
+		if(!order.requireUpdate)
+		{
+			var command = null;
+			var terms = nlp.sentence(message).terms;
+			for(var i = 0; i<terms.length;i++)
 			{
-				console.log(err);
-				callback(err,nextResponse);
-			});
+				//console.log(terms[i]);
+				if(terms[i].pos.Verb == true)
+				{
+					// check to se if it is a command.
+					for (var j = 0; j < commands.length ; j++) 
+					{
+						if(commands[j].keywords.indexOf(terms[i].normal) >= 0)
+						{
+							command = commands[j];
+							responseded = true;
+							orders.UpdateOrder(order.Id,order,function (err,data)
+							{
+								if(err)
+								{
+									callback(err);
+								}
+								else
+								{
+									command.run(order,function (err,d)
+									{
+										callback( err,command.message );
+									});
+								}
+							});
+						}
+					}
+				}
+			}
 		}
-		else
+		if(!responseded)
 		{
-			callback(null,nextResponse);
+			var nextResponse = getNextQuestion(order);
+			if(order.requireUpdate)
+			{
+				orders.UpdateOrder(order.Id,order,function (err,data)
+				{
+					console.log(err);
+					callback(err,nextResponse);
+				});
+			}
+			else
+			{
+				callback(null,nextResponse);
+			}
 		}
 	}
+	
 }
 
 function handleOrderMessage( event , callback , manuallyRespond)
@@ -424,4 +446,4 @@ module.exports = api;
 		console.log(err,body);
 	});*/
 
-//console.log(handleOrderMessage({ sender : 'U2C4HC9DM', originalRequest:{ response_url : "https://hooks.slack.com/commands/T2C4H2X3K/84593953089/hXTgd5vmcqLEIIJdap4XtUeR" }, text : "print"},function (res){console.log(res);}));
+console.log(handleOrderMessage({ sender : 'U2C4HC9DC', originalRequest:{ response_url : "https://hooks.slack.com/commands/T2C4H2X3K/84593953089/hXTgd5vmcqLEIIJdap4XtUeR" }, text : "kids 1"},function (res){console.log(res);}));

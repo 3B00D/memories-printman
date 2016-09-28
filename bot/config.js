@@ -7,7 +7,7 @@ AWS.config.update({
 
 var dynamoClient = new AWS.DynamoDB.DocumentClient();
 
-TABLENAME = "Config";
+var ConfigTable = "Config";
 
 
 module.exports = {
@@ -16,8 +16,8 @@ module.exports = {
                     {
                         
                         var dataJson = JSON.parse(data);
-                        result= Object.keys(dataJson);
-                        callback(err,result);
+                        //result= Object.keys(dataJson);
+                        callback(err,dataJson);
                     }
                 );
     },
@@ -52,7 +52,7 @@ module.exports = {
     function getConfig(config,callback){
         // console.log("Querying the config :"+config);
     var params = {
-        TableName : TABLENAME,
+        TableName : ConfigTable,
         KeyConditionExpression: " #conf = :x ",
         
         ExpressionAttributeNames:{
