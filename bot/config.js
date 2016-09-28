@@ -14,7 +14,27 @@ module.exports = {
     getThemes:function(callback){
         var result=getConfig("Themes",function(err,data)
                     {
-                        callback(err,data);
+                        
+                        var dataJson = JSON.parse(data);
+                        result= Object.keys(dataJson);
+                        callback(err,result);
+                    }
+                );
+    },
+    getThemeTypes:function(theme,callback){
+        var result=getConfig("Themes",function(err,data)
+                    {
+                        
+                        var dataJson = JSON.parse(data);
+                        var hasOwn = Object.prototype.hasOwnProperty;
+                        if (hasOwn.call(dataJson, theme)) {
+                           console.log("Exist");
+                           callback(err,dataJson[theme]);
+                        }
+                        else
+                        {
+                            console.log("Error no Theme "+theme);
+                        }
                     }
                 );
     }
@@ -28,11 +48,12 @@ module.exports = {
                      );
     }
 
+
     function getConfig(config,callback){
         // console.log("Querying the config :"+config);
     var params = {
         TableName : TABLENAME,
-        KeyConditionExpression: "#conf = :x",
+        KeyConditionExpression: " #conf = :x ",
         
         ExpressionAttributeNames:{
             "#conf": "Name"

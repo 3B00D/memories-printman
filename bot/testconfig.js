@@ -1,5 +1,5 @@
 var configModel = require('./config.js');
-
+/*
 var result = configModel.getThemes(function(err,data){
                 if (err) {
                     console.error("Unable to read item. Error JSON:", JSON.stringify(err, null, 2));
@@ -8,9 +8,9 @@ var result = configModel.getThemes(function(err,data){
                 }
             });
 
-/*
+*/
 Theme="kids";
-var result = configModel.getThemesType(Theme,function(err,data){
+var result = configModel.getThemeTypes(Theme,function(err,data){
                 if (err) {
                     console.error("Unable to read item. Error JSON:", JSON.stringify(err, null, 2));
                 } else {
@@ -18,4 +18,4 @@ var result = configModel.getThemesType(Theme,function(err,data){
                 }
             });
 
-*/
+
