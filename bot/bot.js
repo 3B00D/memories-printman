@@ -12,7 +12,11 @@ var phoneParser = new phoneNumberParser();
 var uploadOrderTopic = "arn:aws:sns:us-east-1:957854044465:image-upload-topic";
 var printOrderTopic = "arn:aws:sns:us-east-1:957854044465:printman-process-order";
 var slackDelayedReply = botBuilder.slackDelayedReply
-
+var greetings = [
+	{term:"Hey, Hey man, Hi , hello",answer:"Hey boss, I am so excited to help you printing your memories :D"},
+	{term:"Good morning, Good afternoon, or Good evening",answer:"sir.",answerSame : true},
+	{term:"what's up, Whats up?, Whats new?, or Whats going on?",answer:"Everything is ok, What about you?"}
+];
 var themes = [];
 var themeTypes = {};
 var commands = [
@@ -106,7 +110,13 @@ function getNextQuestion(order)
 	}
 	if( order.completed == 0 )
 	{
-		return "You are ready to go... your order info is : \n"+ JSON.stringify(order, null, 2) +"\nstart ?";
+		var orderInfo = "First Name : "+order.firstName;
+		orderInfo+= "\nLastName : "+order.lastName;
+		orderInfo+= "\nAddress : "+order.address;
+		orderInfo+= "\nPhone Number : "+order.phoneNumber;
+		orderInfo+= "\nTheme : "+order.theme;
+		orderInfo+= "\nTheme type : "+order.themeType;
+		return "You are ready to go... your order info is : \n"+ orderInfo +"\nDo you wish to start ?";
 	}
 
 }
@@ -267,19 +277,47 @@ function decideOrderResponse ( order , message , callback )
 		}
 		if(!responseded)
 		{
-			var nextResponse = getNextQuestion(order);
-			if(order.requireUpdate)
+			if(order.firstName == '#' && order.lastName=='#' && order.address == '#' && order.phoneNumber == '#' && order.theme == '#' && order.themeType == '#')
 			{
-				orders.UpdateOrder(order.Id,order,function (err,data)
+				var tfidf = new natural.TfIdf();
+				var maxMeasured = 0;
+				var greeting = null;
+				for(var i = 0 ; i< greetings.length;i++)
 				{
-					console.log(err);
-					callback(err,nextResponse);
-				});
+					tfidf.addDocument(greetings[i].term);
+					if(tfidf.tfidf(message, i) > maxMeasured)
+					{
+						greeting = greetings[i];
+					}
+				}
+				var messageResponse = "";
+				if(greeting != null)
+				{
+					messageResponse= (greeting.answerSame?message + " " :"")+greeting.answer;
+				}
+				else
+				{
+					messageResponse = "Sorry sir, i couldn't understand your command.";
+				}
+				callback(null,messageResponse);
 			}
 			else
 			{
-				callback(null,nextResponse);
+				var nextResponse = getNextQuestion(order);
+				if(order.requireUpdate)
+				{
+					orders.UpdateOrder(order.Id,order,function (err,data)
+					{
+						console.log(err);
+						callback(err,nextResponse);
+					});
+				}
+				else
+				{
+					callback(null,nextResponse);
+				}
 			}
+			
 		}
 	}
 	
@@ -445,4 +483,4 @@ module.exports = api;
 		console.log(err,body);
 	});*/
 
-console.log(handleOrderMessage({ sender : 'U2C4HC9DC', originalRequest:{ response_url : "https://hooks.slack.com/commands/T2C4H2X3K/84593953089/hXTgd5vmcqLEIIJdap4XtUeR" }, text : "kids 1"},function (res){console.log(res);}));
+// console.log(handleOrderMessage({ sender : 'U2C4HC9DCB', originalRequest:{ response_url : "https://hooks.slack.com/commands/T2C4H2X3K/84593953089/hXTgd5vmcqLEIIJdap4XtUeR" }, text : "Good day"},function (res){console.log(res);}));
