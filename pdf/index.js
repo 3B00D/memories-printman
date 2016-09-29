@@ -11,7 +11,7 @@ function respond(uri , text , callback)
 	slackresponder.respond(uri,{json:{ text : text }}, callback);
 }
 
-function test(order)
+function test(order,context)
 {
 	var orderId=order.Id;
 	var respondUrl = order.attributes.response_url;
@@ -26,8 +26,8 @@ function test(order)
 
 			var options = { format: 'Letter' , orientation : "portrait"};
 			html="";
-			var key = '1.html';
-			fs.readFile('1.html', 'utf8', function (err,data) {
+			var key = orderId+'.html';
+			fs.readFile(order.themeType+'.html', 'utf8', function (err,data) {
 			if (err) {
 				return console.log(err);
 			}
@@ -66,17 +66,17 @@ console.log('Loading function');
  
 exports.handler = function(event, context, callback) {
 // console.log('Received event:', JSON.stringify(event, null, 4));
- 
+ 	
     var message = event.Records[0].Sns.Message;
+    //var message = "{\"order\":{\"phoneNumber\":\"01111692526\",\"address\":\"Malaysia, Kuala lumpur Damansara 60000\",\"lastName\":\"Mog\",\"completed\":0,\"theme\":\"kids\",\"Id\":\"ryOewXKa\",\"userId\":\"U2C4HC9DM\",\"attributes\":{},\"themeType\":\"Kids 1\",\"firstName\":\"John\"}}";
     console.log('Message received from SNS:', message); 
-    callback(null, "Success");
+    
 	var ev = JSON.parse(message);
 	var order = ev.order;
 	console.log(JSON.stringify(order));
 	orderId=order.Id;
 	console.log(JSON.stringify(orderId));
-	test(order);
+	test(order,context);
 };
 
-
-//exports.handler = test;
+//exports.handler();

@@ -11,10 +11,13 @@ var phoneNumberParser = require('./phone-number-parser');
 var phoneParser = new phoneNumberParser();
 var uploadOrderTopic = "arn:aws:sns:us-east-1:957854044465:image-upload-topic";
 var printOrderTopic = "arn:aws:sns:us-east-1:957854044465:printman-process-order";
-var slackDelayedReply = botBuilder.slackDelayedReply
+var response_url = "https://hooks.slack.com/services/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";
+var slackDelayedReply = botBuilder.slackDelayedReply;
+var botName = "printman";
 var greetings = [
 	{term:"Hey, Hey man, Hi , hello",answer:"Hey boss, I am so excited to help you printing your memories :D"},
 	{term:"Good morning, Good afternoon, or Good evening",answer:"sir.",answerSame : true},
+	{term:"What can you do, How can you help me",answer:"I can print your images into a memories book\nSend me some images links and i will upload them for you."},
 	{term:"what's up, Whats up?, Whats new?, or Whats going on?",answer:"Everything is ok, What about you?"}
 ];
 var themes = [];
@@ -48,7 +51,7 @@ function getURIFromString(str)
 function handleImages(event,order,callback)
 {
 	var message = event.text;
-	var respondUrl = event.originalRequest.response_url;
+	var respondUrl = response_url;
 	var sender = event.sender;
 	console.log('incoming event is ',event);
 	var images = getURIFromString(message);
@@ -103,7 +106,8 @@ function getNextQuestion(order)
 		{
 			images.push({
 	    		"image_url" : themeTypes[order.theme][i].image,
-	    		"fallback" : themeTypes[order.theme][i].name
+	    		"fallback" : themeTypes[order.theme][i].name,
+	    		"pretext" : themeTypes[order.theme][i].name
 	    	});
 		}
 		return {text : "What is the required theme type? options are : " , attachments : images };
@@ -325,8 +329,7 @@ function decideOrderResponse ( order , message , callback )
 
 function handleOrderMessage( event , callback , manuallyRespond)
 {
-	var message = event.text;
-	var response_url = event.originalRequest.response_url;
+	var message = event.text.replace(botName+" ","");
 	var sender = event.sender;
 	// completed : 0 -> not completed , 1 -> completed , 2 -> in progress
 	orders.CheckClientOrders(sender,function (err, data)
@@ -379,11 +382,6 @@ function handleOrderMessage( event , callback , manuallyRespond)
 				}
 				else
 				{
-					if(old.attributes.response_url!=response_url)
-					{
-						old.requireUpdate = true;
-						old.attributes.response_url = response_url;
-					}
 					decideOrderResponse( old , message , function (err,response)
 						{
 							if(err)
@@ -483,4 +481,4 @@ module.exports = api;
 		console.log(err,body);
 	});*/
 
-// console.log(handleOrderMessage({ sender : 'U2C4HC9DCB', originalRequest:{ response_url : "https://hooks.slack.com/commands/T2C4H2X3K/84593953089/hXTgd5vmcqLEIIJdap4XtUeR" }, text : "Good day"},function (res){console.log(res);}));
+// console.log(handleOrderMessage({ sender : 'U2C4HC9DCB', originalRequest:{ response_url : "https://hooks.slack.com/commands/T2C4H2X3K/84593953089/hXTgd5vmcqLEIIJdap4XtUeR" }, text : "how can you help me"},function (res){console.log(res);}));
