@@ -1,8 +1,9 @@
 var fs = require('fs');
 var AWS = require('aws-sdk');
 var s3 = new AWS.S3();
-var bucket_name = "printman-images";
+var bucket_name = "printman-orders";
 var ordersImagesModel = require('./orderImages.js');
+var ordersModel = require('./orders.js');
 var s3url="https://s3.amazonaws.com/printman-images/";
 var slackresponder = require('./slack-responder');
 
@@ -16,14 +17,12 @@ function test(order,context)
 	var orderId=order.Id;
 	var respondUrl = order.attributes.response_url;
 	//var orderId = message;//"ryOewXKa";
-	var result = ordersImagesModel.getOrderImages(orderId,function(err,data){
+	var result = ordersImagesModel.getOrderImages(orderId,function(err,images){
 		if (err) {
 			console.error("Unable to read item. Error JSON:", JSON.stringify(err, null, 2));
 		} else {
-			allimages=data.Items;
-			//console.log("", JSON.stringify(data.Items,null, 4));
-			var Images=data.Items;
-
+			var allimages=images.Items;
+			console.log(allimages);
 			var options = { format: 'Letter' , orientation : "portrait"};
 			html="";
 			var key = orderId+'.html';
@@ -48,12 +47,25 @@ function test(order,context)
 					console.log("uploaded");
 					url = data.Location;
 					message = "Your book is uploaded "+url;
-					
-					respond(respondUrl,message,function ( err , response , body )
+					order.completed = 1;
+					ordersModel.UpdateOrder(order.Id,order,function (err,data)
+					{
+						if(err)
+						{
+							respond(respondUrl,err,function ( err , response , body )
+                            {
+                                context.fail();
+                            });
+						}
+						else
+						{
+							respond(respondUrl,message,function ( err , response , body )
                             {
                                 console.log('Yourbook is uploaded',err,data);
                                 context.done();
                             });
+						}
+					});
 				});
 
 			});

@@ -35,10 +35,22 @@ var commands = [
 			        Subject: "printing order",
 			        TopicArn: printOrderTopic
 			    };
-			    sns.publish(params,function (err,d)
-		    	{
-		    		callback(err,d);
-		    	});
+			    order.completed = 2;
+					orders.UpdateOrder(order.Id,order,function (err,data)
+					{
+						if(err)
+						{
+							callback(err);
+						}
+						else
+						{
+							sns.publish(params,function (err,d)
+					    	{
+					    		callback(err,d);
+					    	});
+						}
+					});
+			    
 			}
 		}
 	];

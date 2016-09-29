@@ -7,12 +7,12 @@ AWS.config.update({
 
 var dynamoClient = new AWS.DynamoDB.DocumentClient();
 
-TABLENAME = "OrderImages";
+IMAGESTABLENAME = "OrderImages";
 
 module.exports = {
 
     addOrderImage :function (orderId,userId,imageUrl,callback){
-        var data1={"TableName": TABLENAME,
+        var data1={"TableName": IMAGESTABLENAME,
             Item: {
                 "OrderId": orderId,
                 "imageUrl": imageUrl,
@@ -51,7 +51,7 @@ module.exports = {
     function readRows(id,callback){
         //console.log("connecting to Dynamo");
         var params = {
-            TableName: TABLENAME,
+            TableName: IMAGESTABLENAME,
             Key:{
                  "OrderId": id
             }
@@ -70,7 +70,7 @@ module.exports = {
     function updateRow(data,callback){
         //console.log("connecting to Dynamo");
         var params = {
-            TableName: TABLENAME,
+            TableName: IMAGESTABLENAME,
             Key:{
                  "Id": id
             }
@@ -90,7 +90,7 @@ module.exports = {
         console.log("connecting to Dynamo");
                 
         var params = {
-            TableName: TABLENAME,
+            TableName: IMAGESTABLENAME,
             IndexName: indexName,
             ConsistentRead : false,
             KeyConditionExpression: column+" = :x",
